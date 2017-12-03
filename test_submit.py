@@ -22,6 +22,7 @@ from sklearn.tree import DecisionTreeClassifier
 train_df = pd.read_csv('~/Documents/mlh_local_hack_day/train.csv')
 #train_df = pd.read_csv('home/anorak/Documents/mlh_local_hack_day/train.csv')
 test_df = pd.read_csv('~/Documents/mlh_local_hack_day/test.csv')
+#use this to create change datasets in both train_df and test_df concurrently
 combined_data = [train_df,test_df]
 
 
@@ -66,12 +67,15 @@ for dataset in combined_data:
 
 #print (train_df[['Title', 'Survived']].groupby(['Title']).mean())
 
+#replace rare titles with more common names that mean the same thing
+#for titles that are super rare just replace them with rare
 for dataset in combined_data:
     dataset['Title'] = dataset['Title'].replace(['Lady','Countleas','Capt','Col','Don','Dr','Major','Rev','Sir','Jonkheer','Dona'],'Rare')
     dataset['Title'] = dataset['Title'].replace('Mlle','Miss')
     dataset['Title'] = dataset['Title'].replace('Mme','Mrs')
     dataset['Title'] = dataset['Title'].replace('Ms','Miss')
 
+#map the titles to numeric values
 title_map= {'Mr':1,'Miss':2,'Mrs':3,'Master':4,'Rare':5};
 for dataset in combined_data:
     dataset['Title'] = dataset['Title'].map(title_map)#.astype(int)
@@ -85,12 +89,13 @@ for dataset in combined_data:
     dataset['Sex'] = dataset['Sex'].map(sex_map)
     dataset['Sex'] = dataset['Sex'].fillna(0)
 
-
+#fill in empty age values with the mean age 25
 for dataset in combined_data:
     dataset['Age'] = dataset['Age'].fillna(25)
 
 #print(train_df.head(10))
 
+#turn Age into set numeric values with decisive age ranges
 for dataset in combined_data:
     dataset.loc[ dataset['Age'] <= 16 , 'Age'] = 0
     dataset.loc[(dataset['Age'] > 16) & (dataset['Age'] <= 32), 'Age'] = 1
@@ -108,7 +113,6 @@ for dataset in combined_data:
 #DROPPING FEATURES THAT DONT MATTER
 #these features dont matter
 #drop features at the end of in order to not mess up indexes when creating new features
-
 train_df = train_df.drop(['Ticket', 'Cabin'], axis=1)
 test_df = test_df.drop(['Ticket', 'Cabin'], axis=1)
 train_df = train_df.drop(['Name','PassengerId'],axis = 1)
@@ -161,6 +165,8 @@ pred_map['perceptron'] = Y_pred_percep
 print(acc_percep)
 
 #random_forest ML algorithm
+#uses decision trees with random outcomes
+#after each tree is evaluated take the mean of all decision tree outcomess
 rand_for = RandomForestClassifier()
 rand_for.fit(X_train,Y_train)
 Y_pred_rand_for = rand_for.predict(X_test)
@@ -170,14 +176,14 @@ pred_map['random_forest'] = Y_pred_percep
 print(acc_rand_for)
 
 
-#see which one had the best
+#see which one had the best accuracy
 maximum = acc_map['logistic_regression']
 for x in acc_map:
     if maximum < acc_map[x]:
         maximum = acc_map[x]
         name = x
 
-#print (x," ",end = "")
+#outputs which ML algorithm is the best
 print("This is the best classifier ML algorithm ")
 print(name)
 print("and its accuracy was")
@@ -186,11 +192,13 @@ print(maximum)
 #this is the Y_pred you use based on the best accuracy
 Y_pred = pred_map[name]
 
+#stores a submission csv file
 submission = pd.DataFrame({
     "PassengerId":test_df["PassengerId"],
     "Survived":Y_pred
 })
 
+#makes the kaggle submission csv file
 submission.to_csv('submission.csv',index = False)
 
 
