@@ -19,13 +19,13 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 #usese pandas read_csv to create initial dataframes
-train_df = pd.read_csv('~/Documents/mlh_local_hack_day/train.csv')
+train_df = pd.read_csv('~/Documents/machine_learning/titanic_script/train.csv')
 #train_df = pd.read_csv('home/anorak/Documents/mlh_local_hack_day/train.csv')
-test_df = pd.read_csv('~/Documents/mlh_local_hack_day/test.csv')
+test_df = pd.read_csv('~/Documents/machine_learning/titanic_script/test.csv')
 #use this to create change datasets in both train_df and test_df concurrently
 combined_data = [train_df,test_df]
 
-
+#print(train_df.head(20))
 
 '''
 #USE THIS TO SEE WHICH FEATURES ACTUALLY MATTER
@@ -44,6 +44,8 @@ print(train_df[['Sex','Survived']].groupby(['Sex']).mean().sort_values(by = 'Sur
 #GET RID OF FEATURES THAT DONT MATTER
 
 
+#one for loop for all feature changes
+
 
 #create FamilySize feature
 for dataset in combined_data:
@@ -54,11 +56,13 @@ for dataset in combined_data:
 #create IsAlone Feature
 #this is a good feature because it shows it has a big impact on any individual's survival
 for dataset in combined_data:
+    #default is that they are not alone
     dataset['IsAlone'] = 0
 # if statements dont work because using dataframes dont give exact bool expressions
 #    if dataset.loc[dataset['FamilySize']==1]:
 #        dataset['IsAlone'] = 1
-    dataset.loc[dataset['FamilySize'] == 1, 'IsAlone'] = 1
+    #if they are the only one in their family to be on here then they are alone
+    dataset.loc[dataset['FamilySize'] == 0, 'IsAlone'] = 1
 #print (train_df[['IsAlone', 'Survived']].groupby(['IsAlone']).mean())
 
 #start making Title feature in dataframe
@@ -89,7 +93,7 @@ for dataset in combined_data:
     dataset['Sex'] = dataset['Sex'].map(sex_map)
     dataset['Sex'] = dataset['Sex'].fillna(0)
 
-#fill in empty age values with the mean age 25
+#fill in empty age values with the mean age 25 (FIXME: Do something else with the missing data)
 for dataset in combined_data:
     dataset['Age'] = dataset['Age'].fillna(25)
 
@@ -135,6 +139,7 @@ combine = [train_df,test_df]
 #maps to keep acc values and predicted values connected to algorithm name
 acc_map = {}
 pred_map = {}
+#set up dataframes to be ready for training and testing
 X_train = train_df.drop("Survived",axis = 1)
 Y_train = train_df["Survived"]
 X_test = test_df.drop("PassengerId",axis = 1).copy()
@@ -149,6 +154,7 @@ Y_pred_log = logreg.predict(X_test)
 acc_log = round(logreg.score(X_train,Y_train)*100,2)
 acc_map['logistic_regression'] = acc_log
 pred_map['logistic_regression'] = Y_pred_log
+print("Logistic Regression accuracy")
 print(acc_log)
 
 
@@ -162,6 +168,7 @@ Y_pred_percep = percep.predict(X_test)
 acc_percep = round(percep.score(X_train,Y_train)*100,2)
 acc_map['perceptron'] = acc_percep
 pred_map['perceptron'] = Y_pred_percep
+print("Perceptron accuracy")
 print(acc_percep)
 
 #random_forest ML algorithm
@@ -173,7 +180,20 @@ Y_pred_rand_for = rand_for.predict(X_test)
 acc_rand_for = round(rand_for.score(X_train,Y_train)*100,2)
 acc_map['random_forest'] = acc_rand_for
 pred_map['random_forest'] = Y_pred_percep
+print("Random Forest classifier accuracy")
 print(acc_rand_for)
+
+#linear support vector machines
+#uses similar to perceptron with changing the boundaries for calssification but utilizes
+#the extreme cases for each classifircation
+lin_svc = LinearSVC()
+lin_svc.fit(X_train,Y_train)
+y_pred_lin_svc = lin_svc.predict(X_test)
+acc_lin_svc = round(lin_svc.score(X_train,Y_train)*100,2)
+acc_map['linear_svc'] = acc_lin_svc
+pred_map['linear svc'] = acc_lin_svc
+print("Linear support vector machines")
+print(acc_lin_svc)
 
 
 #see which one had the best accuracy
@@ -184,7 +204,7 @@ for x in acc_map:
         name = x
 
 #outputs which ML algorithm is the best
-print("This is the best classifier ML algorithm ")
+print("This was the best classifier ML algorithm for this dataset")
 print(name)
 print("and its accuracy was")
 print(maximum)
